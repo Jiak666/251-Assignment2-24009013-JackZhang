@@ -156,22 +156,34 @@ class MemAppenderTest {
 
     @Test
     void testDifferentLogLevels() {
-        logger.debug("Debug message");
-        logger.info("Info message");
-        logger.warn("Warning message");
-        logger.error("Error message");
-        logger.fatal("Fatal message");
+        MemAppender.resetInstance();
+        List<LoggingEvent> newEventList = new ArrayList<>();
+        MemAppender newAppender = MemAppender.getInstance(newEventList);
+        newAppender.setLayout(new VelocityLayout("[TEST] $m"));
+        newAppender.setMaxSize(10);
 
-        assertEquals(5, appender.getCurrentSize());
+        Logger newLogger = Logger.getLogger("NewTestLogger");
+        newLogger.removeAllAppenders();
+        newLogger.addAppender(newAppender);
+        newLogger.setLevel(Level.TRACE);
 
-        List<LoggingEvent> logs = appender.getCurrentLogs();
+        newLogger.debug("Debug message");
+        newLogger.info("Info message");
+        newLogger.warn("Warning message");
+        newLogger.error("Error message");
+        newLogger.fatal("Fatal message");
+
+        assertEquals(5, newAppender.getCurrentSize(), "Should have 5 log events for different levels");
+
+        List<LoggingEvent> logs = newAppender.getCurrentLogs();
         assertEquals(Level.DEBUG, logs.get(0).getLevel());
         assertEquals(Level.INFO, logs.get(1).getLevel());
         assertEquals(Level.WARN, logs.get(2).getLevel());
         assertEquals(Level.ERROR, logs.get(3).getLevel());
         assertEquals(Level.FATAL, logs.get(4).getLevel());
-    }
 
+        newAppender.close();
+    }
     @Test
     void testThreadSafety() throws InterruptedException {
         int threadCount = 10;
